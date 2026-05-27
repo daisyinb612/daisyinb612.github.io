@@ -10,7 +10,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { profile } from "./profile.js?v=20260521-noskill1";
+import { profile } from "./profile.js?v=20260525-realstats";
 
 const html = htm.bind(React.createElement);
 const avatarImage = new URL("../assets/profile-avatar.jpg", import.meta.url).href;
@@ -39,6 +39,121 @@ function ExternalLink({ label, url }) {
     <${Pressable} accessibilityRole="link" onPress=${() => openUrl(url)}>
       <${Text} style=${styles.inlineLink}>${label}</${Text}>
     </${Pressable}>
+  `;
+}
+
+const viewCounterConfig = {
+  apiBase: "https://countapi.mileshilliard.com/api/v1",
+  productionHost: "daisyinb612.github.io",
+  totalKey: "daisyinb612-github-pages-homepage-total",
+  dailyKeyPrefix: "daisyinb612-github-pages-homepage-daily",
+};
+
+function getShanghaiDateKey() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const dateParts = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+}
+
+async function readCounter(action, key) {
+  const nonce = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const data = await new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("GET", `${viewCounterConfig.apiBase}/${action}/${key}?nonce=${nonce}`, true);
+    request.responseType = "json";
+    request.onload = () => {
+      const responseBody = request.response || JSON.parse(request.responseText || "{}");
+      resolve(responseBody);
+    };
+    request.onerror = () => reject(new Error("Unable to load view counter"));
+    request.send();
+  });
+
+  if (data.error === "Key not found") {
+    return 0;
+  }
+
+  if (typeof data.value !== "number") {
+    throw new Error(data.error || "Unable to load view counter");
+  }
+
+  return data.value;
+}
+
+function useViewStats() {
+  const [stats, setStats] = React.useState({
+    totalViews: "--",
+    todayViews: "--",
+  });
+
+  React.useEffect(() => {
+    let isActive = true;
+
+    const loadStats = async () => {
+      try {
+        const todayKey = `${viewCounterConfig.dailyKeyPrefix}-${getShanghaiDateKey()}`;
+        const shouldCountVisit =
+          typeof window !== "undefined" && window.location.hostname === viewCounterConfig.productionHost;
+        const action = shouldCountVisit ? "hit" : "get";
+        const [totalViews, todayViews] = await Promise.all([
+          readCounter(action, viewCounterConfig.totalKey),
+          readCounter(action, todayKey),
+        ]);
+
+        if (isActive) {
+          setStats({
+            totalViews: totalViews.toLocaleString("en-US"),
+            todayViews: todayViews.toLocaleString("en-US"),
+          });
+        }
+      } catch {
+        if (isActive) {
+          setStats({
+            totalViews: "--",
+            todayViews: "--",
+          });
+        }
+      }
+    };
+
+    loadStats();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  return stats;
+}
+
+function ViewCounter({ t }) {
+  const stats = useViewStats();
+  const viewStats = t.viewStats;
+
+  return html`
+    <${View} style=${styles.viewStats} accessibilityLabel=${viewStats.title}>
+      <${Text} style=${styles.viewStatsTitle}>${viewStats.title}</${Text}>
+      <${View} style=${styles.viewStatsGrid}>
+        <${View} style=${styles.viewStatItem}>
+          <${Text} style=${styles.viewStatLabel}>${viewStats.totalViews}</${Text}>
+          <${Text} nativeID="real_total_views" style=${styles.viewStatValue}>
+            ${stats.totalViews}
+          </${Text}>
+        </${View}>
+        <${View} style=${styles.viewStatItem}>
+          <${Text} style=${styles.viewStatLabel}>${viewStats.todayViews}</${Text}>
+          <${Text} nativeID="real_today_views" style=${styles.viewStatValue}>
+            ${stats.todayViews}
+          </${Text}>
+        </${View}>
+      </${View}>
+    </${View}>
   `;
 }
 
@@ -308,6 +423,9 @@ export function App() {
             </${Section}>
           </${View}>
         </${View}>
+        <${View} nativeID="page-view-stats" style=${styles.footer}>
+          <${ViewCounter} t=${t} />
+        </${View}>
       </${ScrollView}>
     </${View}>
   `;
@@ -480,6 +598,51 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     textDecorationLine: "underline",
+  },
+  footer: {
+    width: "100%",
+    maxWidth: 1160,
+    marginHorizontal: "auto",
+    paddingHorizontal: 24,
+    paddingTop: 10,
+  },
+  viewStats: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 20,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 18,
+  },
+  viewStatsTitle: {
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "700",
+  },
+  viewStatsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+  },
+  viewStatItem: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 6,
+  },
+  viewStatLabel: {
+    color: colors.lightText,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  viewStatValue: {
+    color: colors.link,
+    fontSize: 14,
+    lineHeight: 19,
+    fontWeight: "700",
+    textAlign: "right",
   },
   article: {
     flex: 1,

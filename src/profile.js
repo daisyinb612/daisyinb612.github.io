@@ -15,9 +15,14 @@ export const profile = {
       name: "马雪娇",
       englishName: "Maxuejiao",
       role: "Incoming Ph.D. Student",
-      affiliation: "华东师范大学 · 上海人工智能研究院",
+      affiliation: "华东师范大学",
       lab: "计算机科学与技术",
       location: "上海，中国",
+      viewStats: {
+        title: "访问统计",
+        totalViews: "总浏览量",
+        todayViews: "今日浏览",
+      },
       nav: [
         { id: "about", label: "关于我" },
         { id: "education", label: "教育经历" },
@@ -46,7 +51,7 @@ export const profile = {
       ],
       education: [
         {
-          period: "2026.9 - 预计",
+          period: "2026.9 - 2029.6",
           degree: "博士研究生(计算机科学与技术)",
           school: "华东师范大学",
           // detail: "计算机科学与技术专业；研究方向为 Human-Agent Interaction, Education",
@@ -168,6 +173,11 @@ export const profile = {
       affiliation: "Shanghai Artificial Intelligence Laboratory · East China Normal University",
       lab: "Computer Science and Technology / AI for Education and HCI",
       location: "Shanghai, China",
+      viewStats: {
+        title: "View Stats",
+        totalViews: "Total views",
+        todayViews: "Today",
+      },
       nav: [
         { id: "about", label: "About" },
         { id: "education", label: "Education" },
